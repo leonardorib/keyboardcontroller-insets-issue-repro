@@ -1,97 +1,29 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Issue Reproducer
 
-# Getting Started
+## Issue Description
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+When the `KeyboardProvider` from `react-native-keyboard-controller` is rendered and `statusBarTranslucent` is `true`, which is always the case for edge-to-edge, the top system inset is overriden, which can impact Android native views relying on it.
 
-## Step 1: Start Metro
+## What the reproducer is doing
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+I created a minimal scenario with an Android native component that is relying on the system insets to position something at the top of the screen. Which in this case is a dummy "close button".
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Context and real affected use case
 
-```sh
-# Using npm
-npm start
+I came across this issue when integrating with [RevenueCat paywalls](https://www.revenuecat.com/docs/tools/paywalls/displaying-paywalls). The idea is: you create a Paywall in their dashboard, calls `presentPaywall`or renders the `PurchasesUI.Paywall` component and the paywall you built will be rendered in the app.
 
-# OR using Yarn
-yarn start
-```
+I noticed that the paywall close button was colliding with the statusbar on Android. It was not being able to account for the statusbar size. At first I thought it was an issue with their SDK, but after I removed the `KeyboardProvider` from `react-native-keyboard-controller` the issue was solved.
 
-## Step 2: Build and run your app
+After some investigation I noticed that `react-native-keyboard-controller` replaces the system window insets on Android:
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+https://github.com/kirillzyusko/react-native-keyboard-controller/blob/f5d6ea2a05ea09715b29d61d64946fadb045a7c6/android/src/main/java/com/reactnativekeyboardcontroller/views/EdgeToEdgeReactViewGroup.kt#L115-L120
 
-### Android
+When I replaced `if (this.isStatusBarTranslucent) 0 else defaultInsets.systemWindowInsetTop` with simply `defaultInsets.systemWindowInsetTop`, therefore keeping it all as default, I didn't get the issue anymore.
 
-```sh
-# Using npm
-npm run android
+## How Revenuecat Paywall relies on it
 
-# OR using Yarn
-yarn android
-```
+I noticed they are relying on it for example here:
 
-### iOS
+https://github.com/RevenueCat/purchases-android/blob/daa30fdb874145878e40ffea154351da4dcbc4ea/ui/revenuecatui/src/main/kotlin/com/revenuecat/purchases/ui/revenuecatui/composables/CloseButton.kt#L23-L29
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+https://github.com/RevenueCat/purchases-android/blob/daa30fdb874145878e40ffea154351da4dcbc4ea/ui/revenuecatui/src/main/kotlin/com/revenuecat/purchases/ui/revenuecatui/composables/InsetSpacers.kt#L13-L19
