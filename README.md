@@ -1,4 +1,4 @@
-# Issue Reproducer
+# Keyboard Controller System Insets Issue Repro
 
 ## Issue Description
 
@@ -27,3 +27,7 @@ I noticed they are relying on it for example here:
 https://github.com/RevenueCat/purchases-android/blob/daa30fdb874145878e40ffea154351da4dcbc4ea/ui/revenuecatui/src/main/kotlin/com/revenuecat/purchases/ui/revenuecatui/composables/CloseButton.kt#L23-L29
 
 https://github.com/RevenueCat/purchases-android/blob/daa30fdb874145878e40ffea154351da4dcbc4ea/ui/revenuecatui/src/main/kotlin/com/revenuecat/purchases/ui/revenuecatui/composables/InsetSpacers.kt#L13-L19
+
+## Video demo
+
+[keyboard-controller-insets-issue-demo.webm](https://github.com/user-attachments/assets/29c15990-fbbb-4f8f-966e-c51a38555fee)
